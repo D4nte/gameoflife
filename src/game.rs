@@ -11,22 +11,29 @@ enum Cell {
 }
 
 impl Cell {
+    /// Returns a new populated cell.
     fn populated() -> Self {
         Cell::Populated
     }
 
+    /// Returns true if the cell is empty (unpopulated).
     fn is_empty(&self) -> bool {
         matches!(self, Cell::Empty)
     }
 
+    /// Returns true if the cell is populated.
     fn is_populated(&self) -> bool {
         matches!(self, Cell::Populated)
     }
 
+    /// Makes a cell empty (unpopulated).
+    /// Whether the cell was populated or empty does not affect the behaviour of this function.
     fn die(&mut self) {
         *self = Cell::Empty;
     }
 
+    /// Makes a cell populated.
+    /// Whether the cell was populated or empty does not affect the behaviour of this function.
     fn spawn(&mut self) {
         *self = Cell::Populated;
     }
