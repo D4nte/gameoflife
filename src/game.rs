@@ -43,16 +43,16 @@ impl Cell {
 struct Grid {
     /// Outer Vector represents columns, inner Vec represents rows
     /// e.g. cells[x][y] returns the cell at column x, row y.
-    cells: Vec<Vec<Cell>>
+    cells: Vec<Vec<Cell>>,
 }
 
 impl Grid {
-    fn new(columns:u16, rows: u16) -> Self {
+    fn new(columns: u16, rows: u16) -> Self {
         let cells = vec![vec![Cell::default(); rows as usize]; columns as usize];
-        Self {cells}
+        Self { cells }
     }
 
-    fn cell (&self, column: u16, row: u16) -> Cell {
+    fn cell(&self, column: u16, row: u16) -> Cell {
         self.cells[column as usize][row as usize]
     }
 }
@@ -98,7 +98,7 @@ mod tests {
         assert!(cell.is_populated());
     }
 
-    proptest!{
+    proptest! {
         #![proptest_config(ProptestConfig {
             cases: 99, .. ProptestConfig::default()
         })]
