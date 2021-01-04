@@ -11,8 +11,16 @@ enum Cell {
 }
 
 impl Cell {
+    fn populated() -> Self {
+        Cell::Populated
+    }
+
     fn is_empty(&self) -> bool {
         matches!(self, Cell::Empty)
+    }
+
+    fn is_populated(&self) -> bool {
+        matches!(self, Cell::Populated)
     }
 }
 
@@ -31,5 +39,14 @@ mod tests {
         let cell = Cell::default();
 
         assert!(cell.is_empty());
+        assert!(!cell.is_populated());
+    }
+
+    #[test]
+    fn can_instantiate_populated_cell() {
+        let cell = Cell::populated();
+
+        assert!(cell.is_populated());
+        assert!(!cell.is_empty());
     }
 }
