@@ -109,7 +109,6 @@ impl Default for Cell {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use proptest::prelude::*;
 
     #[test]
     fn default_cell_is_empty() {
@@ -160,6 +159,12 @@ mod tests {
         assert!(cell_1.is_populated());
         assert!(cell_2.is_populated());
     }
+}
+
+#[cfg(test)]
+mod prop_tests {
+    use super::*;
+    use proptest::prelude::*;
 
     prop_compose! {
         fn arbitrary_column()(int in any::<u16>()) -> Column {
