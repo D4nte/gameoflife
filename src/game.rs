@@ -4,6 +4,7 @@
 ///     Each cell with two or three neighbors survives.
 /// For a space that is empty or unpopulated
 ///     Each cell with three neighbors becomes populated.
+use anyhow::{bail, Result};
 
 #[derive(Debug, Clone, Copy)]
 enum Cell {
@@ -84,6 +85,19 @@ impl Grid {
             None => None,
         }
     }
+
+    fn populate(&mut self, column_index: Column, row_index: Row) -> Result<()> {
+        match self.cells.get_mut(column_index.usize()) {
+            Some(row) => match row.get_mut(row_index.usize()) {
+                Some(cell) => {
+                    cell.spawn();
+                    Ok(())
+                }
+                None => bail!("Coordinates are out of bound."),
+            },
+            None => bail!("Coordinates are out of bound."),
+        }
+    }
 }
 
 impl Default for Cell {
@@ -125,6 +139,26 @@ mod tests {
         let mut cell = Cell::default();
         cell.spawn();
         assert!(cell.is_populated());
+    }
+
+    #[test]
+    fn given_new_grid_when_populate_specific_cells_then_they_are_populated() {
+        let mut grid = Grid::new(Column::new(20), Row::new(20));
+
+        let coordinates_1 = (Column::new(2), Row::new(3));
+        let coordinates_2 = (Column::new(5), Row::new(12));
+        grid.populate(coordinates_1.0, coordinates_1.1).unwrap();
+        grid.populate(coordinates_2.0, coordinates_2.1).unwrap();
+
+        let cell_1 = grid
+            .cell(coordinates_1.0, coordinates_1.1)
+            .expect("some cell");
+        let cell_2 = grid
+            .cell(coordinates_2.0, coordinates_2.1)
+            .expect("some cell");
+
+        assert!(cell_1.is_populated());
+        assert!(cell_2.is_populated());
     }
 
     prop_compose! {
