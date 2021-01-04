@@ -5,6 +5,7 @@
 /// For a space that is empty or unpopulated
 ///     Each cell with three neighbors becomes populated.
 
+#[derive(Debug, Clone, Copy)]
 enum Cell {
     Empty,
     Populated,
@@ -39,6 +40,23 @@ impl Cell {
     }
 }
 
+struct Grid {
+    /// Outer Vector represents columns, inner Vec represents rows
+    /// e.g. cells[x][y] returns the cell at column x, row y.
+    cells: Vec<Vec<Cell>>
+}
+
+impl Grid {
+    fn new(columns:u16, rows: u16) -> Self {
+        let cells = vec![vec![Cell::default(); rows as usize]; columns as usize];
+        Self {cells}
+    }
+
+    fn cell (&self, column: u16, row: u16) -> Cell {
+        self.cells[column as usize][row as usize]
+    }
+}
+
 impl Default for Cell {
     fn default() -> Self {
         Cell::Empty
@@ -48,6 +66,7 @@ impl Default for Cell {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     #[test]
     fn default_cell_is_empty() {
@@ -77,5 +96,18 @@ mod tests {
         let mut cell = Cell::default();
         cell.spawn();
         assert!(cell.is_populated());
+    }
+
+    proptest!{
+        #![proptest_config(ProptestConfig {
+            cases: 99, .. ProptestConfig::default()
+        })]
+        #[test]
+        fn instantiate_a_defined_size_grid_with_empty_cells(columns: u16, rows: u16, x: u16, y: u16) {
+            let grid = Grid::new(columns, rows);
+            if x < columns && y < rows {
+                assert!(grid.cell(x,y).is_empty());
+            }
+        }
     }
 }
