@@ -46,14 +46,43 @@ struct Grid {
     cells: Vec<Vec<Cell>>,
 }
 
+#[derive(Debug, Copy, Clone)]
+struct Column(u16);
+
+#[derive(Debug, Copy, Clone)]
+struct Row(u16);
+
+impl Column {
+    fn new(column: u16) -> Self {
+        Self(column)
+    }
+
+    fn usize(&self) -> usize {
+        self.0 as usize
+    }
+}
+
+impl Row {
+    fn new(row: u16) -> Self {
+        Self(row)
+    }
+
+    fn usize(&self) -> usize {
+        self.0 as usize
+    }
+}
+
 impl Grid {
-    fn new(columns: u16, rows: u16) -> Self {
-        let cells = vec![vec![Cell::default(); rows as usize]; columns as usize];
+    fn new(columns: Column, rows: Row) -> Self {
+        let cells = vec![vec![Cell::default(); rows.usize()]; columns.usize()];
         Self { cells }
     }
 
-    fn cell(&self, column: u16, row: u16) -> Cell {
-        self.cells[column as usize][row as usize]
+    fn cell(&self, column_index: Column, row_index: Row) -> Option<Cell> {
+        match self.cells.get(column_index.usize()) {
+            Some(row) => row.get(row_index.usize()).copied(),
+            None => None,
+        }
     }
 }
 
@@ -98,15 +127,31 @@ mod tests {
         assert!(cell.is_populated());
     }
 
+    prop_compose! {
+        fn arbitrary_column()(int in any::<u16>()) -> Column {
+            Column(int)
+        }
+    }
+
+    prop_compose! {
+        fn arbitrary_row()(int in any::<u16>()) -> Row {
+            Row(int)
+        }
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig {
             cases: 99, .. ProptestConfig::default()
         })]
         #[test]
-        fn instantiate_a_defined_size_grid_with_empty_cells(columns: u16, rows: u16, x: u16, y: u16) {
+        fn instantiate_a_defined_size_grid_with_empty_cells(columns in arbitrary_column(),
+                                                            rows in arbitrary_row(),
+                                                            x in arbitrary_column(),
+                                                            y in arbitrary_row()) {
             let grid = Grid::new(columns, rows);
-            if x < columns && y < rows {
-                assert!(grid.cell(x,y).is_empty());
+            let cell = grid.cell(x, y);
+            if let Some(cell) = cell {
+                assert!(cell.is_empty());
             }
         }
     }
