@@ -7,7 +7,7 @@
 
 enum Cell {
     Empty,
-    Populated
+    Populated,
 }
 
 impl Cell {
@@ -21,6 +21,14 @@ impl Cell {
 
     fn is_populated(&self) -> bool {
         matches!(self, Cell::Populated)
+    }
+
+    fn die(&mut self) {
+        *self = Cell::Empty;
+    }
+
+    fn spawn(&mut self) {
+        *self = Cell::Populated;
     }
 }
 
@@ -48,5 +56,19 @@ mod tests {
 
         assert!(cell.is_populated());
         assert!(!cell.is_empty());
+    }
+
+    #[test]
+    fn given_populated_cell_when_it_dies_then_it_is_empty() {
+        let mut cell = Cell::populated();
+        cell.die();
+        assert!(cell.is_empty());
+    }
+
+    #[test]
+    fn given_empty_cell_when_it_spawns_then_it_is_populated() {
+        let mut cell = Cell::default();
+        cell.spawn();
+        assert!(cell.is_populated());
     }
 }
