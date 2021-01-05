@@ -5,6 +5,7 @@
 /// For a space that is empty or unpopulated
 ///     Each cell with three neighbors becomes populated.
 use anyhow::{bail, Result};
+use std::ops::Add;
 
 #[derive(Debug, Clone, Copy)]
 enum Cell {
@@ -47,10 +48,10 @@ struct Grid {
     cells: Vec<Vec<Cell>>,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 struct Column(u16);
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 struct Row(u16);
 
 impl Column {
@@ -61,6 +62,16 @@ impl Column {
     fn usize(&self) -> usize {
         self.0 as usize
     }
+
+    fn try_sub(self, rh: u16) -> Option<Self> {
+        let lh = self.0;
+
+        if lh > rh {
+            Some(Self(lh - rh))
+        } else {
+            None
+        }
+    }
 }
 
 impl Row {
@@ -70,6 +81,75 @@ impl Row {
 
     fn usize(&self) -> usize {
         self.0 as usize
+    }
+
+    fn try_sub(self, rh: u16) -> Option<Self> {
+        let lh = self.0;
+
+        if lh > rh {
+            Some(Self(lh - rh))
+        } else {
+            None
+        }
+    }
+}
+
+impl Add<u16> for Column {
+    type Output = Self;
+
+    fn add(self, rhs: u16) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
+
+impl Add<u16> for Row {
+    type Output = Self;
+
+    fn add(self, rhs: u16) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Coordinates {
+    row: Row,
+    column: Column,
+}
+
+impl Coordinates {
+    fn new(row: Row, column: Column) -> Self {
+        Self { row, column }
+    }
+
+    /// Returns the neighbouring coordinates.
+    /// If the coordinates are near a 0 edges then the invalid
+    /// neighbours are omitted.
+    /// (i-1,j-1) (i,j-1)   (i+1,j-1)
+    /// (i-1,j)   Self(i,j) (i+1,j)
+    /// (i-1,j+1) (i,j+1)   (i+1,j+1)
+
+    fn neighbours(&self) -> Vec<Coordinates> {
+        let mut neighbours = vec![];
+
+        if let (Some(row), Some(column)) = (self.row.try_sub(1), self.column.try_sub(1)) {
+            neighbours.push(Coordinates::new(row, column));
+        }
+        if let (row, Some(column)) = (self.row, self.column.try_sub(1)) {
+            neighbours.push(Coordinates::new(row, column));
+        }
+        if let (row, Some(column)) = (self.row + 1, self.column.try_sub(1)) {
+            neighbours.push(Coordinates::new(row, column));
+        }
+        neighbours.push(Coordinates::new(self.row + 1, self.column));
+        neighbours.push(Coordinates::new(self.row + 1, self.column + 1));
+        neighbours.push(Coordinates::new(self.row, self.column + 1));
+        if let (Some(row), column) = (self.row.try_sub(1), self.column + 1) {
+            neighbours.push(Coordinates::new(row, column));
+        }
+        if let (Some(row), column) = (self.row.try_sub(1), self.column) {
+            neighbours.push(Coordinates::new(row, column));
+        }
+        neighbours
     }
 }
 
@@ -158,6 +238,30 @@ mod tests {
 
         assert!(cell_1.is_populated());
         assert!(cell_2.is_populated());
+    }
+
+    #[test]
+    fn given_coordinate_when_neighbours_requested_return_them() {
+        let coordinate = Coordinates::new(Row::new(3), Column::new(5));
+
+        let neighbours = coordinate.neighbours();
+
+        let expected_neighbours = vec![
+            Coordinates::new(Row::new(2), Column::new(4)),
+            Coordinates::new(Row::new(3), Column::new(4)),
+            Coordinates::new(Row::new(4), Column::new(4)),
+            Coordinates::new(Row::new(4), Column::new(5)),
+            Coordinates::new(Row::new(4), Column::new(6)), //
+            Coordinates::new(Row::new(3), Column::new(6)), //
+            Coordinates::new(Row::new(2), Column::new(6)),
+            Coordinates::new(Row::new(2), Column::new(5)),
+        ];
+
+        assert_eq!(neighbours.len(), expected_neighbours.len());
+
+        for expected in expected_neighbours {
+            assert!(neighbours.contains(&expected))
+        }
     }
 }
 
