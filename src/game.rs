@@ -112,13 +112,13 @@ impl Add<u16> for Row {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Coordinates {
-    row: Row,
     column: Column,
+    row: Row,
 }
 
 impl Coordinates {
-    fn new(row: Row, column: Column) -> Self {
-        Self { row, column }
+    fn new(column: Column, row: Row) -> Self {
+        Self { column, row }
     }
 
     /// Returns the neighbouring coordinates.
@@ -131,23 +131,23 @@ impl Coordinates {
     fn neighbours(&self) -> Vec<Coordinates> {
         let mut neighbours = vec![];
 
-        if let (Some(row), Some(column)) = (self.row.try_sub(1), self.column.try_sub(1)) {
-            neighbours.push(Coordinates::new(row, column));
+        if let (Some(column), Some(row)) = (self.column.try_sub(1), self.row.try_sub(1)) {
+            neighbours.push(Coordinates::new(column, row));
         }
-        if let (row, Some(column)) = (self.row, self.column.try_sub(1)) {
-            neighbours.push(Coordinates::new(row, column));
+        if let (Some(column), row) = (self.column.try_sub(1), self.row) {
+            neighbours.push(Coordinates::new(column, row));
         }
-        if let (row, Some(column)) = (self.row + 1, self.column.try_sub(1)) {
-            neighbours.push(Coordinates::new(row, column));
+        if let (Some(column), row) = (self.column.try_sub(1), self.row + 1) {
+            neighbours.push(Coordinates::new(column, row));
         }
-        neighbours.push(Coordinates::new(self.row + 1, self.column));
-        neighbours.push(Coordinates::new(self.row + 1, self.column + 1));
-        neighbours.push(Coordinates::new(self.row, self.column + 1));
-        if let (Some(row), column) = (self.row.try_sub(1), self.column + 1) {
-            neighbours.push(Coordinates::new(row, column));
+        neighbours.push(Coordinates::new(self.column, self.row + 1));
+        neighbours.push(Coordinates::new(self.column + 1, self.row + 1));
+        neighbours.push(Coordinates::new(self.column + 1, self.row));
+        if let (column, Some(row)) = (self.column + 1, self.row.try_sub(1)) {
+            neighbours.push(Coordinates::new(column, row));
         }
-        if let (Some(row), column) = (self.row.try_sub(1), self.column) {
-            neighbours.push(Coordinates::new(row, column));
+        if let (column, Some(row)) = (self.column, self.row.try_sub(1)) {
+            neighbours.push(Coordinates::new(column, row));
         }
         neighbours
     }
@@ -176,6 +176,40 @@ impl Grid {
                 None => bail!("Coordinates are out of bound."),
             },
             None => bail!("Coordinates are out of bound."),
+        }
+    }
+
+    fn neighbour_cells(&self, column_index: Column, row_index: Row) -> Vec<Cell> {
+        let coordinates = Coordinates::new(column_index, row_index).neighbours();
+        let mut neighbours = vec![];
+
+        for coordinates in coordinates {
+            if let Some(cell) = self.cell(coordinates.column, coordinates.row) {
+                neighbours.push(cell)
+            }
+        }
+
+        neighbours
+    }
+
+    fn next(&mut self) {
+        for i in 0..self.cells.len() {
+            // TODO: have a safe method on grid
+            for j in 0..self.cells[i].len() {
+                let column = Column::new(i as u16);
+                let row = Row::new(j as u16);
+                let neighbours = self.neighbour_cells(column, row);
+                let mut populated = 0;
+                for cell in neighbours {
+                    if cell.is_populated() {
+                        populated += 1;
+                    }
+                }
+
+                if populated < 2 {
+                    self.cells[i][j].die()
+                }
+            }
         }
     }
 }
@@ -242,19 +276,19 @@ mod tests {
 
     #[test]
     fn given_coordinate_when_neighbours_requested_return_them() {
-        let coordinate = Coordinates::new(Row::new(3), Column::new(5));
+        let coordinate = Coordinates::new(Column::new(5), Row::new(3));
 
         let neighbours = coordinate.neighbours();
 
         let expected_neighbours = vec![
-            Coordinates::new(Row::new(2), Column::new(4)),
-            Coordinates::new(Row::new(3), Column::new(4)),
-            Coordinates::new(Row::new(4), Column::new(4)),
-            Coordinates::new(Row::new(4), Column::new(5)),
-            Coordinates::new(Row::new(4), Column::new(6)), //
-            Coordinates::new(Row::new(3), Column::new(6)), //
-            Coordinates::new(Row::new(2), Column::new(6)),
-            Coordinates::new(Row::new(2), Column::new(5)),
+            Coordinates::new(Column::new(4), Row::new(2)),
+            Coordinates::new(Column::new(4), Row::new(3)),
+            Coordinates::new(Column::new(4), Row::new(4)),
+            Coordinates::new(Column::new(5), Row::new(4)),
+            Coordinates::new(Column::new(6), Row::new(4)), //
+            Coordinates::new(Column::new(6), Row::new(3)), //
+            Coordinates::new(Column::new(6), Row::new(2)),
+            Coordinates::new(Column::new(5), Row::new(2)),
         ];
 
         assert_eq!(neighbours.len(), expected_neighbours.len());
@@ -262,6 +296,28 @@ mod tests {
         for expected in expected_neighbours {
             assert!(neighbours.contains(&expected))
         }
+    }
+
+    #[test]
+    fn given_new_grid_with_isolated_cells_when_next_they_die() {
+        let mut grid = Grid::new(Column::new(20), Row::new(20));
+
+        let coordinates_1 = (Column::new(2), Row::new(3));
+        let coordinates_2 = (Column::new(5), Row::new(12));
+        grid.populate(coordinates_1.0, coordinates_1.1).unwrap();
+        grid.populate(coordinates_2.0, coordinates_2.1).unwrap();
+
+        grid.next();
+
+        let cell_1 = grid
+            .cell(coordinates_1.0, coordinates_1.1)
+            .expect("some cell");
+        let cell_2 = grid
+            .cell(coordinates_2.0, coordinates_2.1)
+            .expect("some cell");
+
+        assert!(cell_1.is_empty());
+        assert!(cell_2.is_empty());
     }
 }
 
