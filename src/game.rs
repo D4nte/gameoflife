@@ -304,8 +304,10 @@ mod tests {
 
         let coordinates_1 = (Column::new(2), Row::new(3));
         let coordinates_2 = (Column::new(5), Row::new(12));
+        let coordinates_3 = (Column::new(5), Row::new(13));
         grid.populate(coordinates_1.0, coordinates_1.1).unwrap();
         grid.populate(coordinates_2.0, coordinates_2.1).unwrap();
+        grid.populate(coordinates_3.0, coordinates_3.1).unwrap();
 
         grid.next();
 
